@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>budget tracker ni alli</title>
+
+<style>
+:root {
+  --pink: #f7dce5;
+  --pink-dark: #bd718d;
+  --green: #dce9d7;
+  --cream: #fffaf3;
+  --ink: #51464b;
+  --muted: #8d7e83;
+  --danger: #b94c66;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px 14px 40px;
+  min-height: 100vh;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: "Trebuchet MS", sans-serif;
+}
+
+.app {
+  width: min(700px, 100%);
+  margin: auto;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+h1 {
+  color: var(--pink-dark);
+  font-family: Georgia, serif;
+  font-size: clamp(2rem, 7vw, 3rem);
+  margin: 8px 0;
+}
+
+.subtitle, .hint, .note {
+  color: var(--muted);
+}
+
+.card {
+  background: white;
+  border: 2px solid #f3e2e6;
+  border-radius: 24px;
+  padding: 22px;
+  margin: 15px 0;
+  box-shadow: 0 8px 22px #9b708014;
+}
+
+h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+label {
+  display: block;
+  font-size: .9rem;
+  font-weight: bold;
+  margin: 12px 0 6px;
+}
+
+input {
+  width: 100%;
+  border: 1.5px solid #ead9df;
+  background: #fffdfd;
+  color: var(--ink);
+  border-radius: 13px;
+  padding: 12px;
+  font: inherit;
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--pink-dark);
+}
+
+button {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--pink);
+  color: #874d63;
+}
+
+.green-btn {
+  background: var(--green);
+  color: #486b4b;
+}
+
+.small-btn {
+  padding: 8px 11px;
+  font-size: .82rem;
+  background: #fbe9ee;
+  color: #975b70;
+}
+
+.full {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.hidden { display: none !important; }
+
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stat {
+  padding: 14px 8px;
+  border-radius: 17px;
+  background: #fff4f7;
+  text-align: center;
+  min-width: 0;
+}
+
+.stat:nth-child(2) { background: #f0f6ed; }
+.stat:nth-child(3) { background: #fff8e9; }
+
+.stat-label {
+  color: var(--muted);
+  font-size: .75rem;
+  margin-bottom: 7px;
+}
+
+.amount {
+  font-weight: bold;
+  font-size: clamp(.85rem, 3.3vw, 1.1rem);
+  overflow-wrap: anywhere;
+}
+
+.progress-track {
+  height: 11px;
+  background: #f3e8eb;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 15px;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #e9a8bd, #8eaf8d);
+  border-radius: 99px;
+  transition: width .25s;
+}
+
+.hint { font-size: .85rem; }
+
+.notice {
+  padding: 12px;
+  border-radius: 14px;
+  margin-top: 13px;
+  background: #fff0f2;
+  color: var(--danger);
+  font-size: .9rem;
+  font-weight: bold;
+}
+
+.expense-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.expense-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px dashed #eadde1;
+}
+
+.expense-item:last-child { border-bottom: 0; }
+
+.expense-name {
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.expense-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.expense-price { font-weight: bold; }
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 22px 8px;
+}
+
+.note {
+  text-align: center;
+  font-size: .8rem;
+  margin-top: 18px;
+}
+
+@media (max-width: 480px) {
+  .card { padding: 17px; }
+  .budget-grid { gap: 6px; }
+  .stat { padding: 12px 5px; }
+  .expense-item { align-items: flex-start; }
+  .expense-right {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+}
+</style>
+</head>
+
+<body>
+<main class="app">
+
+<header>
+  <div>🌷 ✧ 🧸 ✧ 🌷</div>
+  <h1>Budget Tracker</h1>
+  <p class="subtitle">for you and your wallet ♡</p>
+</header>
+
+<section class="card" id="setupCard">
+  <h2>🎀 Set your budget!</h2>
+  <p class="hint">
+    How much money do you have to spend?
+    Let's keep track of it together.
+  </p>
+
+  <form id="budgetForm">
+    <label for="budgetInput">Your total budget (₱)</label>
+    <input
+      id="budgetInput"
+      type="number"
+      min="0.01"
+      step="0.01"
+      placeholder="e.g. 1500"
+      required
+    >
+    <button class="primary full" type="submit">
+      Let's start ♡
+    </button>
+  </form>
+</section>
+
+<section id="tracker" class="hidden">
+
+  <section class="card">
+    <h2>🌼 Your budget but make it cute</h2>
+
+    <div class="budget-grid">
+      <div class="stat">
+        <div class="stat-label">My budget</div>
+        <div class="amount" id="budgetTotal">₱0.00</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">Money spent</div>
+        <div class="amount" id="spentTotal">₱0.00</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">Money left</div>
+        <div class="amount" id="remainingTotal">₱0.00</div>
+      </div>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <p class="hint" id="progressText">
+      Keeping track of ur budget! ✨
+    </p>
+
+    <div id="budgetNotice" class="notice hidden" role="alert"></div>
+
+    <button
+      id="changeBudgetBtn"
+      class="small-btn"
+      type="button"
+      style="margin-top:12px"
+    >
+      Change budget
+    </button>
+  </section>
+
+  <section class="card">
+    <h2>🛍️ Add an expense</h2>
+
+    <form id="expenseForm">
+      <label for="expenseName">What did you buy?</label>
+      <input
+        id="expenseName"
+        maxlength="80"
+        placeholder="e.g. iced coffee ☕"
+        required
+      >
+
+      <label for="expenseAmount">Price (₱)</label>
+      <input
+        id="expenseAmount"
+        type="number"
+        min="0.01"
+        step="0.01"
+        placeholder="e.g. 120"
+        required
+      >
+
+      <button class="green-btn full" type="submit">
+        Add to my list +
+      </button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>🧾 My little expense list</h2>
+
+    <ul id="expenseList" class="expense-list"></ul>
+
+    <div id="emptyState" class="empty">
+      No expenses yet. Keep your coins safe, cutie! 🐰
+    </div>
+
+    <button
+      id="resetBtn"
+      class="small-btn"
+      type="button"
+      style="margin-top:12px"
+    >
+      Start over
+    </button>
+  </section>
+
+</section>
+
+<p class="note">made with ♡ for your little money goals</p>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let budget = 0;
+let expenses = [];
+
+const peso = amount =>
+  new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2
+  }).format(amount);
+
+function totalSpent() {
+  return expenses.reduce(
+    (sum, expense) => sum + expense.amount, 0
+  );
+}
+
+function showTracker() {
+  $("setupCard").classList.add("hidden");
+  $("tracker").classList.remove("hidden");
+  render();
+}
+
+// SET INITIAL BUDGET
+$("budgetForm").addEventListener("submit", event => {
+  event.preventDefault();
+
+  const value = Number($("budgetInput").value);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    alert("Please enter a budget greater than ₱0.00 🌷");
+    return;
+  }
+
+  budget = value;
+  expenses = [];
+  showTracker();
+});
+
+// CHANGE BUDGET
+$("changeBudgetBtn").addEventListener("click", () => {
+  const value = prompt(
+    "What is your new total budget? (₱)",
+    String(budget)
+  );
+
+  if (value === null) return;
+
+  const newBudget = Number(value);
+
+  if (!Number.isFinite(newBudget) || newBudget <= 0) {
+    alert("Please enter a valid budget greater than ₱0.00 🌷");
+    return;
+  }
+
+  budget = newBudget;
+  render();
+
+  if (totalSpent() > budget) {
+    alert(
+      `Oopsie! You're over your new budget by ${
+        peso(totalSpent() - budget)
+      }. Let's be careful, cutie! 🥺`
+    );
+  }
+});
+
+// ADD EXPENSE
+$("expenseForm").addEventListener("submit", event => {
+  event.preventDefault();
+
+  const name = $("expenseName").value.trim();
+  const amount = Number($("expenseAmount").value);
+
+  if (!name) {
+    alert("Please add an expense name 🌸");
+    return;
+  }
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("Please enter an amount greater than ₱0.00 🌷");
+    return;
+  }
+
+  const previousTotal = totalSpent();
+
+  expenses.push({
+    id: Date.now() + Math.random(),
+    name,
+    amount
+  });
+
+  $("expenseForm").reset();
+  render();
+
+  const newTotal = totalSpent();
+
+  if (newTotal > budget && previousTotal <= budget) {
+    alert(
+      `Oh no, cutie! 🥺 Your total is now ${peso(newTotal)}, ` +
+      `which is ${peso(newTotal - budget)} over your budget! ` +
+      `Time to slow down on spending! 💗`
+    );
+  } else if (newTotal > budget) {
+    alert(
+      `You're still over budget by ${peso(newTotal - budget)}! ` +
+      `Take care of your coins, cutie. 🌷`
+    );
+  } else if (newTotal === budget) {
+    alert(
+      "You used your whole budget exactly! " +
+      "No money left to spend, cutie. 🎀"
+    );
+  }
+
+  $("expenseName").focus();
+});
+
+// UPDATE THE DISPLAY
+function render() {
+  const spent = totalSpent();
+  const remaining = budget - spent;
+
+  $("budgetTotal").textContent = peso(budget);
+  $("spentTotal").textContent = peso(spent);
+  $("remainingTotal").textContent = peso(remaining);
+
+  $("remainingTotal").style.color =
+    remaining < 0 ? "var(--danger)" : "var(--ink)";
+
+  const percent = (spent / budget) * 100;
+
+  $("progressFill").style.width =
+    `${Math.min(percent, 100)}%`;
+
+  $("progressFill").style.background =
+    percent > 100
+      ? "linear-gradient(90deg, #d982a0, #b94c66)"
+      : "linear-gradient(90deg, #e9a8bd, #8eaf8d)";
+
+  if (spent > budget) {
+    $("progressText").textContent =
+      `${Math.round(percent)}% of your budget used — let's pause spending! 💸`;
+
+    $("budgetNotice").textContent =
+      `🚨 Over budget by ${peso(spent - budget)}. Be gentle with your wallet!`;
+
+    $("budgetNotice").classList.remove("hidden");
+  } else {
+    $("progressText").textContent =
+      `${Math.round(percent)}% of your budget used. You're doing great! ✨`;
+
+    $("budgetNotice").classList.add("hidden");
+  }
+
+  const list = $("expenseList");
+  list.replaceChildren();
+
+  $("emptyState").classList.toggle(
+    "hidden", expenses.length > 0
+  );
+
+  expenses.slice().reverse().forEach(expense => {
+    const li = document.createElement("li");
+    li.className = "expense-item";
+
+    const info = document.createElement("div");
+
+    const name = document.createElement("div");
+    name.className = "expense-name";
+    name.textContent = expense.name;
+
+    info.append(name);
+
+    const right = document.createElement("div");
+    right.className = "expense-right";
+
+    const price = document.createElement("span");
+    price.className = "expense-price";
+    price.textContent = peso(expense.amount);
+
+    const remove = document.createElement("button");
+    remove.className = "small-btn";
+    remove.type = "button";
+    remove.textContent = "Remove";
+
+    remove.addEventListener("click", () => {
+      expenses = expenses.filter(
+        item => item.id !== expense.id
+      );
+      render();
+    });
+
+    right.append(price, remove);
+    li.append(info, right);
+    list.append(li);
+  });
+}
+
+// RESET EVERYTHING
+$("resetBtn").addEventListener("click", () => {
+  if (!confirm(
+    "Start over? This will clear your budget and all expenses. 🌷"
+  )) return;
+
+  budget = 0;
+  expenses = [];
+
+  $("budgetInput").value = "";
+  $("expenseForm").reset();
+
+  $("tracker").classList.add("hidden");
+  $("setupCard").classList.remove("hidden");
+});
+</script>
+</body>
+</html>
