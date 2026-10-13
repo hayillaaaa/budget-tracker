@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -361,8 +362,60 @@ button {
 <script>
 const $ = id => document.getElementById(id);
 
+const STORAGE_KEY = "alliBudgetTrackerData";
+
 let budget = 0;
 let expenses = [];
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      budget,
+      expenses
+    }));
+  } catch (error) {
+    console.error("Unable to save budget data:", error);
+    alert("Your data couldn't be saved in this browser. 🥺");
+  }
+}
+
+function loadData() {
+  try {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+
+    if (!savedData) return;
+
+    const data = JSON.parse(savedData);
+
+    if (
+      !data ||
+      typeof data.budget !== "number" ||
+      !Number.isFinite(data.budget) ||
+      data.budget <= 0 ||
+      !Array.isArray(data.expenses)
+    ) {
+      return;
+    }
+
+    const validExpenses = data.expenses.every(expense =>
+      expense &&
+      typeof expense.name === "string" &&
+      typeof expense.amount === "number" &&
+      Number.isFinite(expense.amount) &&
+      expense.amount > 0 &&
+      typeof expense.id === "number"
+    );
+
+    if (!validExpenses) return;
+
+    budget = data.budget;
+    expenses = data.expenses;
+
+    showTracker();
+  } catch (error) {
+    console.error("Unable to load saved budget data:", error);
+  }
+}
 
 const peso = amount =>
   new Intl.NumberFormat("en-PH", {
@@ -380,10 +433,10 @@ function totalSpent() {
 function showTracker() {
   $("setupCard").classList.add("hidden");
   $("tracker").classList.remove("hidden");
+  $("budgetInput").value = budget;
   render();
 }
 
-// SET INITIAL BUDGET
 $("budgetForm").addEventListener("submit", event => {
   event.preventDefault();
 
@@ -394,12 +447,20 @@ $("budgetForm").addEventListener("submit", event => {
     return;
   }
 
+  if (budget > 0 && !confirm(
+    "Starting a new budget will replace your current budget and expenses. Continue? 🌷"
+  )) {
+    $("budgetInput").value = budget;
+    return;
+  }
+
   budget = value;
   expenses = [];
+
+  saveData();
   showTracker();
 });
 
-// CHANGE BUDGET
 $("changeBudgetBtn").addEventListener("click", () => {
   const value = prompt(
     "What is your new total budget? (₱)",
@@ -407,6 +468,11 @@ $("changeBudgetBtn").addEventListener("click", () => {
   );
 
   if (value === null) return;
+
+  if (value.trim() === "") {
+    alert("Please enter a valid budget 🌷");
+    return;
+  }
 
   const newBudget = Number(value);
 
@@ -416,6 +482,8 @@ $("changeBudgetBtn").addEventListener("click", () => {
   }
 
   budget = newBudget;
+
+  saveData();
   render();
 
   if (totalSpent() > budget) {
@@ -427,7 +495,6 @@ $("changeBudgetBtn").addEventListener("click", () => {
   }
 });
 
-// ADD EXPENSE
 $("expenseForm").addEventListener("submit", event => {
   event.preventDefault();
 
@@ -452,6 +519,7 @@ $("expenseForm").addEventListener("submit", event => {
     amount
   });
 
+  saveData();
   $("expenseForm").reset();
   render();
 
@@ -478,7 +546,6 @@ $("expenseForm").addEventListener("submit", event => {
   $("expenseName").focus();
 });
 
-// UPDATE THE DISPLAY
 function render() {
   const spent = totalSpent();
   const remaining = budget - spent;
@@ -550,6 +617,8 @@ function render() {
       expenses = expenses.filter(
         item => item.id !== expense.id
       );
+
+      saveData();
       render();
     });
 
@@ -562,11 +631,17 @@ function render() {
 // RESET EVERYTHING
 $("resetBtn").addEventListener("click", () => {
   if (!confirm(
-    "Start over? This will clear your budget and all expenses. 🌷"
+    "Start over? This will permanently clear your saved budget and expenses from this browser. 🌷"
   )) return;
 
   budget = 0;
   expenses = [];
+
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.error("Unable to remove saved data:", error);
+  }
 
   $("budgetInput").value = "";
   $("expenseForm").reset();
@@ -574,6 +649,8 @@ $("resetBtn").addEventListener("click", () => {
   $("tracker").classList.add("hidden");
   $("setupCard").classList.remove("hidden");
 });
+
+loadData();
 </script>
 </body>
 </html>
